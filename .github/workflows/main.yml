@@ -1,15 +1,10 @@
-name: NodeJS
+ame: NodeJS
 
 env:
-  # Using the correct secret syntax
   APPLITOOLS_API_KEY: ${{ secrets.APPLITOOLS_API_KEY }}
-  # NOTE: github.event.pull_request is null on "push" events. 
-  # This logic handles PRs, but on "push" to main, BATCH_ID will be empty.
-  BRANCH_NAME : "YONIT"
+  # NOTE: github.event.pull_request is null on "push" events.
+  # On "push" to main, head.sha is empty so we fall back to github.sha.
   APPLITOOLS_BATCH_ID: ${{ github.event.pull_request.head.sha || github.sha }}
-  APPLITOOLS_ID_CANDIDATE: ${{ github.event.pull_request.merge_commit_sha }}
-  APPLITOOLS_ID_CANDIDATE1: ${{ github.event.pull_request.head.sha }}
-  APPLITOOLS_ID_CANDIDATE2: ${{ github.sha }}
 
 on:
   push:
@@ -34,32 +29,32 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Install Dependencies & Install Playwright
+      - name: Install dependencies and Playwright
         run: |
           npm install
           npx playwright install --with-deps
 
-      - name: Build and Test
+      - name: Notify Applitools of push
+        run: |
+          BRANCH_NAME="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+          PARENT_BRANCH_NAME="${GITHUB_BASE_REF:-main}"
+          curl -L -d '' -X POST \
+            "https://eyesapi.applitools.com/api/externals/github/push?apiKey=${APPLITOOLS_API_KEY}&CommitSha=${APPLITOOLS_BATCH_ID}&BranchName=${BRANCH_NAME}&ParentBranchName=${PARENT_BRANCH_NAME}"
+
+      - name: Build and test
         run: |
           echo "Batch ID: $APPLITOOLS_BATCH_ID"
-          echo "Candidate: $APPLITOOLS_ID_CANDIDATE"
-          echo "Candidate 1: $APPLITOOLS_ID_CANDIDATE1"
-          echo "Candidate 2: $APPLITOOLS_ID_CANDIDATE2"
-            
           npm run test-allure
 
-  # This is now a separate job, indented correctly under 'jobs'
   batch-completion-notification:
     runs-on: ubuntu-latest
-    needs: [build] # Wait for the build job to finish
-    if: always()   # Run even if tests fail
+    needs: [build]
+    if: always()
     steps:
       - name: Update Applitools batch status
-        uses: wei/curl@v1.1.1
-        with:
-          # Fixed indentation and added "" for the empty -d flag
-          args: -X POST -d -H "accept:*/*" https://eyesapi.applitools.com/api/externals/github/servers/github.com/commit/${{env.APPLITOOLS_BATCH_ID}}/complete?apiKey=${{env.APPLITOOLS_API_KEY}}
-
-
-
-          
+        run: |
+          curl -L -X POST -H "accept: */*" \
+            "https://eyesapi.applitools.com/api/externals/github/servers/github.com/commit/${APPLITOOLS_BATCH_ID}/complete?apiKey=${APPLITOOLS_API_KEY}"
+        env:
+          APPLITOOLS_BATCH_ID: ${{ github.event.pull_request.head.sha || github.sha }}
+          APPLITOOLS_API_KEY: ${{ secrets.APPLITOOLS_API_KEY }}
