@@ -44,7 +44,7 @@ jobs:
       - name: Build and test
         run: |
           echo "Batch ID: $APPLITOOLS_BATCH_ID"
-          npm run test-allure
+          npm run test
 
   batch-completion-notification:
     runs-on: ubuntu-latest
