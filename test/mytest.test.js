@@ -30,7 +30,7 @@ test("playwright-test", async ({ page }) => {
     await eyes.open(page);
 
     try {
-        const url="https://www.yahoo.com";
+        const url="https://www.bbc.com";
         await page.goto(url)
 
        await eyes.check('page ',Target.window())
