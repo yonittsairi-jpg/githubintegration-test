@@ -1,30 +1,13 @@
-require('dotenv').config();
-const { devices, defineConfig } = require("@playwright/test");
+const { devices } = require("@playwright/test");
 
-export default defineConfig({
-  testDir: "./test",
-  reporter: [
-    ["list"],
-    [
-      "allure-playwright",
-      {
-        resultsDir: "./out/allure-results",
-        environmentInfo: {
-          node_version: process.version,
+module.exports = {
+    projects: [
+        {
+            name: 'ipad-pro',
+            use: { ...devices['iPad Pro 11'] },
         },
-      },
     ],
-  ],
-    use: {
-        screenshot: 'on', // Optional: helpful for allure reports
-        video: 'retain-on-failure', // Optional
-    },
-  projects: [
-    {
-      name: "playwright-allure-eyes",
-      use: {
-        ...devices["Desktop Chrome"],
-      },
-    },
-  ],
-});
+
+
+
+};
